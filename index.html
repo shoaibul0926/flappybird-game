@@ -226,11 +226,28 @@
     .game-title { font-size: 22px; }
     #finalScoreLine { font-size: 32px; }
   }
+
+  #muteBtn {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    z-index: 16;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #fff;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    font-size: 15px;
+    cursor: pointer;
+    line-height: 1;
+  }
 </style>
 </head>
 <body>
 
 <div id="gameContainer">
+  <button id="muteBtn" title="Toggle sound">🔊</button>
   <canvas id="game" width="400" height="600"></canvas>
   <div id="score">0</div>
   <div id="readyPrompt">Click, tap, or press Space to flap</div>
@@ -311,6 +328,46 @@
   const W = canvas.width;
   const H = canvas.height;
 
+  // ---------- Audio ----------
+  const muteBtn = document.getElementById('muteBtn');
+  let audioCtx = null;
+  let muted = localStorage.getItem('flappyMuted') === '1';
+  muteBtn.textContent = muted ? '🔇' : '🔊';
+
+  function ensureAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  }
+
+  function beep(freq, duration, type, gainVal, glideTo) {
+    if (muted) return;
+    try {
+      ensureAudio();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type || 'square';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      if (glideTo) osc.frequency.exponentialRampToValueAtTime(glideTo, audioCtx.currentTime + duration);
+      gain.gain.setValueAtTime(gainVal || 0.15, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    } catch (e) { /* audio unavailable, ignore */ }
+  }
+
+  const sfxFlap = () => beep(420, 0.08, 'square', 0.08, 620);
+  const sfxScore = () => beep(880, 0.12, 'sine', 0.12, 1320);
+  const sfxHit = () => beep(160, 0.3, 'sawtooth', 0.16, 40);
+  const sfxUi = () => beep(500, 0.06, 'square', 0.06, 700);
+
+  muteBtn.addEventListener('click', () => {
+    muted = !muted;
+    localStorage.setItem('flappyMuted', muted ? '1' : '0');
+    muteBtn.textContent = muted ? '🔇' : '🔊';
+  });
+
   // ---------- Screens ----------
   const screens = {
     name: document.getElementById('nameScreen'),
@@ -337,6 +394,7 @@
   let playerName = 'Player';
 
   function confirmName() {
+    sfxUi();
     const typed = nameInput.value.trim();
     playerName = typed.length > 0 ? typed : 'Player';
     welcomeName.textContent = `Welcome, ${playerName}!`;
@@ -351,10 +409,11 @@
   const howToBtn = document.getElementById('howToBtn');
   const editNameBtn = document.getElementById('editNameBtn');
 
-  newGameBtn.addEventListener('click', () => showScreen('modeSelect'));
-  leaderboardBtn.addEventListener('click', () => { renderLeaderboard(); showScreen('leaderboard'); });
-  howToBtn.addEventListener('click', () => showScreen('howTo'));
+  newGameBtn.addEventListener('click', () => { sfxUi(); showScreen('modeSelect'); });
+  leaderboardBtn.addEventListener('click', () => { sfxUi(); renderLeaderboard(); showScreen('leaderboard'); });
+  howToBtn.addEventListener('click', () => { sfxUi(); showScreen('howTo'); });
   editNameBtn.addEventListener('click', () => {
+    sfxUi();
     nameInput.value = playerName === 'Player' ? '' : playerName;
     showScreen('name');
   });
@@ -366,13 +425,13 @@
   };
   let selectedMode = 1;
 
-  document.getElementById('modeCard1').addEventListener('click', () => startGame(1));
-  document.getElementById('modeCard2').addEventListener('click', () => startGame(2));
-  document.getElementById('backToMenuBtn').addEventListener('click', () => showScreen('menu'));
+  document.getElementById('modeCard1').addEventListener('click', () => { sfxUi(); startGame(1); });
+  document.getElementById('modeCard2').addEventListener('click', () => { sfxUi(); startGame(2); });
+  document.getElementById('backToMenuBtn').addEventListener('click', () => { sfxUi(); showScreen('menu'); });
 
   // ---------- Leaderboard / How to Play back buttons ----------
-  document.getElementById('lbBackBtn').addEventListener('click', () => showScreen('menu'));
-  document.getElementById('howToBackBtn').addEventListener('click', () => showScreen('menu'));
+  document.getElementById('lbBackBtn').addEventListener('click', () => { sfxUi(); showScreen('menu'); });
+  document.getElementById('howToBackBtn').addEventListener('click', () => { sfxUi(); showScreen('menu'); });
 
   // ============================================================
   // LEADERBOARD (persisted to localStorage on this device)
@@ -426,9 +485,9 @@
   const finalScoreLine = document.getElementById('finalScoreLine');
   const bestLine = document.getElementById('bestLine');
 
-  document.getElementById('playAgainBtn').addEventListener('click', () => startGame(selectedMode));
-  document.getElementById('changeModeBtn').addEventListener('click', () => showScreen('modeSelect'));
-  document.getElementById('mainMenuBtn').addEventListener('click', () => showScreen('menu'));
+  document.getElementById('playAgainBtn').addEventListener('click', () => { sfxUi(); startGame(selectedMode); });
+  document.getElementById('changeModeBtn').addEventListener('click', () => { sfxUi(); showScreen('modeSelect'); });
+  document.getElementById('mainMenuBtn').addEventListener('click', () => { sfxUi(); showScreen('menu'); });
 
   // ============================================================
   // GAME (original mechanics, unchanged aside from mode-driven tuning)
@@ -482,8 +541,10 @@
       state = 'playing';
       readyPrompt.style.display = 'none';
       bird.velocity = bird.flapPower;
+      sfxFlap();
     } else if (state === 'playing') {
       bird.velocity = bird.flapPower;
+      sfxFlap();
     }
   }
 
@@ -539,6 +600,7 @@
           p.passed = true;
           score++;
           scoreEl.textContent = score;
+          sfxScore();
         }
 
         if (p.x + pipeWidth < -10) {
@@ -565,6 +627,7 @@
   function gameOver() {
     if (state !== 'playing') return;
     state = 'dead';
+    sfxHit();
     if (score > best) {
       best = score;
       localStorage.setItem('flappyBest', best);
