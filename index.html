@@ -357,10 +357,30 @@
     } catch (e) { /* audio unavailable, ignore */ }
   }
 
-  const sfxFlap = () => beep(420, 0.08, 'square', 0.08, 620);
-  const sfxScore = () => beep(880, 0.12, 'sine', 0.12, 1320);
+  // Soft, airy, bell-like identity: sine waves in a higher register.
+  const sfxFlap = () => beep(560, 0.09, 'sine', 0.07, 780);
+  const sfxScore = () => { beep(880, 0.1, 'sine', 0.1, 1320); beep(1320, 0.12, 'sine', 0.07, 1760); };
   const sfxHit = () => beep(160, 0.3, 'sawtooth', 0.16, 40);
-  const sfxUi = () => beep(500, 0.06, 'square', 0.06, 700);
+  const sfxUi = () => beep(660, 0.08, 'sine', 0.07, 990);
+
+  // ---------- Background music: airy floating arpeggio ----------
+  const BG_NOTES = [523.25, 659.25, 783.99, 659.25]; // C5 E5 G5 E5
+  let bgTimer = null;
+  let bgStep = 0;
+  function playBgStep() {
+    const f = BG_NOTES[bgStep % BG_NOTES.length];
+    beep(f, 0.55, 'sine', 0.03, f * 1.01);
+    bgStep++;
+  }
+  function startBgMusic() {
+    if (bgTimer) return;
+    bgStep = 0;
+    playBgStep();
+    bgTimer = setInterval(playBgStep, 650);
+  }
+  function stopBgMusic() {
+    if (bgTimer) { clearInterval(bgTimer); bgTimer = null; }
+  }
 
   muteBtn.addEventListener('click', () => {
     muted = !muted;
@@ -534,6 +554,7 @@
     state = 'ready';
     readyPrompt.style.display = 'block';
     showScreen('game');
+    startBgMusic();
   }
 
   function flap() {
@@ -627,6 +648,7 @@
   function gameOver() {
     if (state !== 'playing') return;
     state = 'dead';
+    stopBgMusic();
     sfxHit();
     if (score > best) {
       best = score;
