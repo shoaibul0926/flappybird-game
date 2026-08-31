@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Flappy Bird</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
 
   body {
     display: flex;
@@ -12,12 +13,15 @@
     align-items: center;
     min-height: 100vh;
     background: linear-gradient(135deg, #2c3e50, #4ca1af);
-    font-family: 'Segoe UI', Arial, sans-serif;
     overflow: hidden;
   }
 
   #gameContainer {
     position: relative;
+    width: 400px;
+    height: 600px;
+    max-width: 100vw;
+    max-height: 100vh;
     box-shadow: 0 20px 60px rgba(0,0,0,0.5);
     border-radius: 8px;
     overflow: hidden;
@@ -27,37 +31,6 @@
     display: block;
     background: linear-gradient(#70c5ce, #a1e3f0);
     cursor: pointer;
-  }
-
-  #overlay {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    color: #fff;
-    text-align: center;
-    background: rgba(0,0,0,0.45);
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
-  }
-
-  #overlay h1 {
-    font-size: 42px;
-    margin-bottom: 10px;
-    color: #ffd93d;
-    letter-spacing: 2px;
-  }
-
-  #overlay p {
-    font-size: 18px;
-    margin: 6px 0;
-  }
-
-  #overlay .hint {
-    font-size: 14px;
-    opacity: 0.85;
-    margin-top: 20px;
   }
 
   #score {
@@ -71,6 +44,187 @@
     text-shadow: 3px 3px 0 rgba(0,0,0,0.3);
     user-select: none;
     pointer-events: none;
+    display: none;
+    z-index: 8;
+  }
+
+  /* ---------- Ready prompt (small, shown over live canvas) ---------- */
+  #readyPrompt {
+    position: absolute;
+    top: 55%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+    text-align: center;
+    background: rgba(0,0,0,0.35);
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 15px;
+    pointer-events: none;
+    display: none;
+    z-index: 9;
+  }
+
+  /* ---------- Shared overlay-screen styling ---------- */
+  .screen {
+    position: absolute;
+    inset: 0;
+    z-index: 15;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 26px 22px;
+    background: rgba(15, 35, 50, 0.72);
+    backdrop-filter: blur(3px);
+    animation: fadeIn 0.3s ease;
+  }
+  .screen.active { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .game-title {
+    font-size: 28px;
+    font-weight: 900;
+    color: #ffd93d;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+    margin-bottom: 6px;
+    letter-spacing: 0.5px;
+  }
+
+  .game-subtitle {
+    color: rgba(255,255,255,0.75);
+    font-size: 13px;
+    margin-bottom: 26px;
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    border: none;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 14px 34px;
+    border-radius: 28px;
+    cursor: pointer;
+    letter-spacing: 0.4px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    width: 100%;
+    max-width: 260px;
+  }
+  .btn:hover { transform: translateY(-2px) scale(1.03); }
+  .btn:active { transform: translateY(0) scale(0.97); }
+
+  .btn-primary {
+    background: linear-gradient(145deg, #4ca1af, #2c3e50);
+    box-shadow: 0 8px 20px rgba(76, 161, 175, 0.45);
+    margin-bottom: 12px;
+  }
+  .btn-secondary {
+    background: linear-gradient(145deg, #ff9d3d, #ff6b35);
+    box-shadow: 0 8px 20px rgba(255, 107, 53, 0.45);
+    margin-bottom: 12px;
+  }
+  .btn-ghost {
+    background: rgba(255,255,255,0.1);
+    box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.25);
+  }
+
+  /* ---------- Name entry ---------- */
+  #nameInput {
+    width: 100%;
+    max-width: 260px;
+    padding: 13px 16px;
+    font-size: 16px;
+    border-radius: 28px;
+    border: none;
+    outline: none;
+    text-align: center;
+    margin-bottom: 16px;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.94);
+    color: #2c3e50;
+    font-weight: 600;
+  }
+  #nameInput:focus { box-shadow: inset 0 0 0 2px #ffd93d; }
+
+  /* ---------- Menu ---------- */
+  #welcomeText {
+    font-size: 17px;
+    color: #ffd93d;
+    font-weight: 700;
+    margin-bottom: 22px;
+  }
+  #editNameBtn {
+    display: inline-flex;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0,0,0,0.35);
+    color: #fff;
+    font-size: 11px;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+
+  /* ---------- Mode select ---------- */
+  .mode-card {
+    width: 100%;
+    max-width: 300px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 14px;
+    padding: 15px 17px;
+    margin-bottom: 12px;
+    text-align: left;
+    box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.15);
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+  .mode-card:hover { transform: translateY(-2px); background: rgba(255,255,255,0.16); }
+  .mode-card h3 { color: #ffd93d; font-size: 16px; margin-bottom: 4px; }
+  .mode-card p { color: rgba(255,255,255,0.8); font-size: 12.5px; line-height: 1.4; }
+
+  /* ---------- Leaderboard ---------- */
+  #leaderboardList { width: 100%; max-width: 300px; margin-bottom: 18px; max-height: 240px; overflow-y: auto; }
+  .lb-row {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,0.09);
+    border-radius: 12px; padding: 9px 13px; margin-bottom: 8px; text-align: left;
+  }
+  .lb-rank { font-weight: 800; font-size: 14px; color: rgba(255,255,255,0.6); width: 22px; flex-shrink: 0; }
+  .lb-row.rank-1 .lb-rank { color: #ffd93d; }
+  .lb-row.rank-2 .lb-rank { color: #d9d9e3; }
+  .lb-row.rank-3 .lb-rank { color: #e0a458; }
+  .lb-info { flex: 1; min-width: 0; }
+  .lb-name { color: #fff; font-weight: 700; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lb-meta { color: rgba(255,255,255,0.6); font-size: 10.5px; margin-top: 1px; }
+  .lb-score { color: #7ee787; font-weight: 800; font-size: 16px; flex-shrink: 0; }
+  #leaderboardEmpty { color: rgba(255,255,255,0.65); font-size: 13px; margin-bottom: 18px; }
+
+  /* ---------- How to play ---------- */
+  #howToList { width: 100%; max-width: 300px; margin-bottom: 22px; text-align: left; }
+  #howToList li {
+    list-style: none; display: flex; gap: 10px; align-items: flex-start;
+    background: rgba(255,255,255,0.09); border-radius: 12px; padding: 11px 13px;
+    margin-bottom: 9px; color: rgba(255,255,255,0.88); font-size: 12.5px; line-height: 1.5;
+  }
+  #howToList .howto-icon { font-size: 17px; flex-shrink: 0; }
+  #howToList b { color: #ffd93d; }
+
+  /* ---------- Results ---------- */
+  #resultsScreen h1 { color: #ffd93d; font-size: 30px; margin-bottom: 4px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+  #resultsMeta { color: rgba(255,255,255,0.75); font-size: 13px; margin-bottom: 8px; }
+  #finalScoreLine { font-size: 40px; font-weight: 800; color: #7ee787; margin: 4px 0 6px; text-shadow: 0 3px 8px rgba(0,0,0,0.4); }
+  #bestLine { color: rgba(255,255,255,0.7); font-size: 13px; margin-bottom: 22px; }
+
+  @media (max-width: 420px) {
+    .game-title { font-size: 22px; }
+    #finalScoreLine { font-size: 32px; }
   }
 </style>
 </head>
@@ -79,11 +233,71 @@
 <div id="gameContainer">
   <canvas id="game" width="400" height="600"></canvas>
   <div id="score">0</div>
-  <div id="overlay">
-    <h1>🐦 Flappy Bird</h1>
-    <p id="statusText">Click, tap, or press Space to flap</p>
-    <p id="finalScore"></p>
-    <p class="hint">Click / Tap / Space to start</p>
+  <div id="readyPrompt">Click, tap, or press Space to flap</div>
+
+  <!-- ===================== NAME ENTRY ===================== -->
+  <div id="nameScreen" class="screen active">
+    <div class="game-title">🐦 Flappy Bird</div>
+    <div class="game-subtitle">Enter your name to get started</div>
+    <input type="text" id="nameInput" placeholder="Your name" maxlength="14" autocomplete="off">
+    <button class="btn btn-primary" id="nameContinueBtn">Continue</button>
+  </div>
+
+  <!-- ===================== MAIN MENU (3 options) ===================== -->
+  <div id="menuScreen" class="screen">
+    <div class="game-title">🐦 Main Menu</div>
+    <div id="welcomeText"><span id="welcomeName">Welcome, Player!</span> <button id="editNameBtn" title="Change name">✏️</button></div>
+    <button class="btn btn-primary" id="newGameBtn">🎮 New Game</button>
+    <button class="btn btn-secondary" id="leaderboardBtn">🏆 Leaderboard</button>
+    <button class="btn btn-ghost" id="howToBtn">❓ How to Play</button>
+  </div>
+
+  <!-- ===================== MODE SELECT ===================== -->
+  <div id="modeSelectScreen" class="screen">
+    <div class="game-title">Choose a Mode</div>
+    <div class="game-subtitle">Pick how you want to play</div>
+    <div class="mode-card" id="modeCard1">
+      <h3>🌤️ Mode 1 — Classic</h3>
+      <p>The original pace — forgiving pipe gaps and a steady scroll speed.</p>
+    </div>
+    <div class="mode-card" id="modeCard2">
+      <h3>🔥 Mode 2 — Hard Mode</h3>
+      <p>Tighter gaps and a faster scroll — for Flappy veterans only.</p>
+    </div>
+    <button class="btn btn-ghost" id="backToMenuBtn" style="margin-top:4px;">← Back</button>
+  </div>
+
+  <!-- ===================== LEADERBOARD ===================== -->
+  <div id="leaderboardScreen" class="screen">
+    <div class="game-title">🏆 Leaderboard</div>
+    <div class="game-subtitle">Best scores on this device</div>
+    <div id="leaderboardList"></div>
+    <div id="leaderboardEmpty" style="display:none;">No games played yet — go set a record!</div>
+    <button class="btn btn-ghost" id="lbBackBtn">← Back</button>
+  </div>
+
+  <!-- ===================== HOW TO PLAY ===================== -->
+  <div id="howToScreen" class="screen">
+    <div class="game-title">❓ How to Play</div>
+    <ul id="howToList">
+      <li><span class="howto-icon">👆</span><span><b>Tap, click, or press Space</b> to flap and rise.</span></li>
+      <li><span class="howto-icon">🚧</span><span>Weave through the gaps between pipes without touching them.</span></li>
+      <li><span class="howto-icon">🌍</span><span>Don't hit the ground or fly above the top of the screen.</span></li>
+      <li><span class="howto-icon">🎯</span><span>Score a point every time you clear a pipe.</span></li>
+      <li><span class="howto-icon">🔥</span><span><b>Hard Mode</b> shrinks the gaps and speeds up the pipes for a real challenge.</span></li>
+    </ul>
+    <button class="btn btn-ghost" id="howToBackBtn">← Back</button>
+  </div>
+
+  <!-- ===================== RESULTS ===================== -->
+  <div id="resultsScreen" class="screen">
+    <h1>Game Over</h1>
+    <div id="resultsMeta">Player · Mode</div>
+    <div id="finalScoreLine">0</div>
+    <div id="bestLine">Best: 0</div>
+    <button class="btn btn-primary" id="playAgainBtn">🔁 Play Again</button>
+    <button class="btn btn-secondary" id="changeModeBtn">🎯 Change Mode</button>
+    <button class="btn btn-ghost" id="mainMenuBtn">🏠 Main Menu</button>
   </div>
 </div>
 
@@ -91,40 +305,152 @@
 (function() {
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
-  const overlay = document.getElementById('overlay');
-  const statusText = document.getElementById('statusText');
-  const finalScoreEl = document.getElementById('finalScore');
   const scoreEl = document.getElementById('score');
+  const readyPrompt = document.getElementById('readyPrompt');
 
   const W = canvas.width;
   const H = canvas.height;
 
-  // Game state
-  let state = 'ready'; // ready, playing, over
+  // ---------- Screens ----------
+  const screens = {
+    name: document.getElementById('nameScreen'),
+    menu: document.getElementById('menuScreen'),
+    modeSelect: document.getElementById('modeSelectScreen'),
+    leaderboard: document.getElementById('leaderboardScreen'),
+    howTo: document.getElementById('howToScreen'),
+    results: document.getElementById('resultsScreen')
+  };
+
+  function showScreen(name) {
+    Object.values(screens).forEach(s => s.classList.remove('active'));
+    const isGame = name === 'game';
+    canvas.style.display = isGame ? 'block' : 'none';
+    scoreEl.style.display = isGame ? 'block' : 'none';
+    if (!isGame) readyPrompt.style.display = 'none';
+    if (!isGame && screens[name]) screens[name].classList.add('active');
+  }
+
+  // ---------- Name entry ----------
+  const nameInput = document.getElementById('nameInput');
+  const nameContinueBtn = document.getElementById('nameContinueBtn');
+  const welcomeName = document.getElementById('welcomeName');
+  let playerName = 'Player';
+
+  function confirmName() {
+    const typed = nameInput.value.trim();
+    playerName = typed.length > 0 ? typed : 'Player';
+    welcomeName.textContent = `Welcome, ${playerName}!`;
+    showScreen('menu');
+  }
+  nameContinueBtn.addEventListener('click', confirmName);
+  nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') confirmName(); });
+
+  // ---------- Main menu ----------
+  const newGameBtn = document.getElementById('newGameBtn');
+  const leaderboardBtn = document.getElementById('leaderboardBtn');
+  const howToBtn = document.getElementById('howToBtn');
+  const editNameBtn = document.getElementById('editNameBtn');
+
+  newGameBtn.addEventListener('click', () => showScreen('modeSelect'));
+  leaderboardBtn.addEventListener('click', () => { renderLeaderboard(); showScreen('leaderboard'); });
+  howToBtn.addEventListener('click', () => showScreen('howTo'));
+  editNameBtn.addEventListener('click', () => {
+    nameInput.value = playerName === 'Player' ? '' : playerName;
+    showScreen('name');
+  });
+
+  // ---------- Mode select ----------
+  const MODES = {
+    1: { key: 1, name: 'Classic', pipeGap: 150, pipeSpeed: 2.6, pipeInterval: 95 },
+    2: { key: 2, name: 'Hard Mode', pipeGap: 115, pipeSpeed: 3.4, pipeInterval: 80 }
+  };
+  let selectedMode = 1;
+
+  document.getElementById('modeCard1').addEventListener('click', () => startGame(1));
+  document.getElementById('modeCard2').addEventListener('click', () => startGame(2));
+  document.getElementById('backToMenuBtn').addEventListener('click', () => showScreen('menu'));
+
+  // ---------- Leaderboard / How to Play back buttons ----------
+  document.getElementById('lbBackBtn').addEventListener('click', () => showScreen('menu'));
+  document.getElementById('howToBackBtn').addEventListener('click', () => showScreen('menu'));
+
+  // ============================================================
+  // LEADERBOARD (persisted to localStorage on this device)
+  // ============================================================
+  const LEADERBOARD_KEY = 'flappyLeaderboard';
+  const leaderboardList = document.getElementById('leaderboardList');
+  const leaderboardEmpty = document.getElementById('leaderboardEmpty');
+
+  function loadLeaderboard() {
+    try {
+      const raw = localStorage.getItem(LEADERBOARD_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  }
+
+  function saveScoreToLeaderboard(name, finalScore, modeName) {
+    const list = loadLeaderboard();
+    list.push({ name, score: finalScore, mode: modeName, date: new Date().toLocaleDateString() });
+    list.sort((a, b) => b.score - a.score);
+    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(list.slice(0, 10)));
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = String(str);
+    return div.innerHTML;
+  }
+
+  function renderLeaderboard() {
+    const list = loadLeaderboard();
+    leaderboardList.innerHTML = '';
+    leaderboardEmpty.style.display = list.length === 0 ? 'block' : 'none';
+    const medals = ['🥇', '🥈', '🥉'];
+    list.forEach((entry, i) => {
+      const row = document.createElement('div');
+      row.className = 'lb-row' + (i < 3 ? ' rank-' + (i + 1) : '');
+      row.innerHTML = `
+        <div class="lb-rank">${i < 3 ? medals[i] : (i + 1)}</div>
+        <div class="lb-info">
+          <div class="lb-name">${escapeHtml(entry.name)}</div>
+          <div class="lb-meta">${escapeHtml(entry.mode)} · ${escapeHtml(entry.date)}</div>
+        </div>
+        <div class="lb-score">${entry.score}</div>
+      `;
+      leaderboardList.appendChild(row);
+    });
+  }
+
+  // ---------- Results screen ----------
+  const resultsMeta = document.getElementById('resultsMeta');
+  const finalScoreLine = document.getElementById('finalScoreLine');
+  const bestLine = document.getElementById('bestLine');
+
+  document.getElementById('playAgainBtn').addEventListener('click', () => startGame(selectedMode));
+  document.getElementById('changeModeBtn').addEventListener('click', () => showScreen('modeSelect'));
+  document.getElementById('mainMenuBtn').addEventListener('click', () => showScreen('menu'));
+
+  // ============================================================
+  // GAME (original mechanics, unchanged aside from mode-driven tuning)
+  // ============================================================
+
+  let state = 'ready'; // ready, playing, dead
   let frame = 0;
   let score = 0;
   let best = Number(localStorage.getItem('flappyBest') || 0);
 
-  // Bird
   const bird = {
-    x: 90,
-    y: H / 2,
-    r: 14,
-    velocity: 0,
-    gravity: 0.45,
-    flapPower: -8,
-    rotation: 0
+    x: 90, y: H / 2, r: 14,
+    velocity: 0, gravity: 0.45, flapPower: -8, rotation: 0
   };
 
-  // Pipes
-  const pipeWidth = 60;
-  const pipeGap = 150;
-  const pipeSpeed = 2.6;
+  let pipeWidth = 60;
+  let pipeGap = 150;
+  let pipeSpeed = 2.6;
+  let pipeInterval = 95;
   let pipes = [];
   let pipeTimer = 0;
-  const pipeInterval = 95;
 
-  // Ground
   const groundHeight = 80;
   let groundX = 0;
 
@@ -139,25 +465,31 @@
     scoreEl.textContent = '0';
   }
 
+  function startGame(modeKey) {
+    selectedMode = modeKey;
+    const mode = MODES[modeKey];
+    pipeGap = mode.pipeGap;
+    pipeSpeed = mode.pipeSpeed;
+    pipeInterval = mode.pipeInterval;
+    resetGame();
+    state = 'ready';
+    readyPrompt.style.display = 'block';
+    showScreen('game');
+  }
+
   function flap() {
     if (state === 'ready') {
       state = 'playing';
-      overlay.style.display = 'none';
+      readyPrompt.style.display = 'none';
       bird.velocity = bird.flapPower;
     } else if (state === 'playing') {
       bird.velocity = bird.flapPower;
-    } else if (state === 'over') {
-      resetGame();
-      state = 'ready';
-      overlay.style.display = 'flex';
-      statusText.textContent = 'Click, tap, or press Space to flap';
-      finalScoreEl.textContent = '';
     }
   }
 
-  // Input handlers
   window.addEventListener('keydown', function(e) {
-    if (e.code === 'Space') {
+    if (e.code === 'Space' && screens.results.classList.contains('active') === false
+        && canvas.style.display === 'block') {
       e.preventDefault();
       flap();
     }
@@ -172,12 +504,7 @@
     const minTop = 50;
     const maxTop = H - groundHeight - pipeGap - 50;
     const topHeight = Math.floor(Math.random() * (maxTop - minTop)) + minTop;
-    pipes.push({
-      x: W,
-      top: topHeight,
-      bottom: topHeight + pipeGap,
-      passed: false
-    });
+    pipes.push({ x: W, top: topHeight, bottom: topHeight + pipeGap, passed: false });
   }
 
   function rectCircleCollide(cx, cy, cr, rx, ry, rw, rh) {
@@ -221,9 +548,7 @@
 
         const collideTop = rectCircleCollide(bird.x, bird.y, bird.r, p.x, 0, pipeWidth, p.top);
         const collideBottom = rectCircleCollide(bird.x, bird.y, bird.r, p.x, p.bottom, pipeWidth, H - p.bottom);
-        if (collideTop || collideBottom) {
-          gameOver();
-        }
+        if (collideTop || collideBottom) gameOver();
       }
 
       if (bird.y + bird.r >= H - groundHeight) {
@@ -239,14 +564,16 @@
 
   function gameOver() {
     if (state !== 'playing') return;
-    state = 'over';
+    state = 'dead';
     if (score > best) {
       best = score;
       localStorage.setItem('flappyBest', best);
     }
-    overlay.style.display = 'flex';
-    statusText.textContent = 'Game Over';
-    finalScoreEl.textContent = 'Score: ' + score + '   |   Best: ' + best;
+    saveScoreToLeaderboard(playerName, score, MODES[selectedMode].name);
+    resultsMeta.textContent = `${playerName} · ${MODES[selectedMode].name}`;
+    finalScoreLine.textContent = score;
+    bestLine.textContent = 'Best: ' + best;
+    showScreen('results');
   }
 
   function drawBackgroundClouds() {
@@ -273,11 +600,9 @@
       grad.addColorStop(1, '#3d9142');
       ctx.fillStyle = grad;
 
-      // top pipe
       ctx.fillRect(p.x, 0, pipeWidth, p.top);
       ctx.fillRect(p.x - 4, p.top - 20, pipeWidth + 8, 20);
 
-      // bottom pipe
       ctx.fillRect(p.x, p.bottom, pipeWidth, H - p.bottom - groundHeight);
       ctx.fillRect(p.x - 4, p.bottom, pipeWidth + 8, 20);
 
@@ -304,7 +629,6 @@
     ctx.translate(bird.x, bird.y);
     ctx.rotate(bird.rotation * Math.PI / 180);
 
-    // body
     ctx.fillStyle = '#ffd93d';
     ctx.beginPath();
     ctx.ellipse(0, 0, bird.r, bird.r - 2, 0, 0, Math.PI * 2);
@@ -313,14 +637,12 @@
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // wing
     ctx.fillStyle = '#ffb300';
     ctx.beginPath();
     const flapAngle = Math.sin(frame * 0.4) * 0.4;
     ctx.ellipse(-2, 2, 8, 5, flapAngle, 0, Math.PI * 2);
     ctx.fill();
 
-    // eye
     ctx.fillStyle = '#fff';
     ctx.beginPath();
     ctx.arc(6, -4, 4, 0, Math.PI * 2);
@@ -330,7 +652,6 @@
     ctx.arc(7.5, -4, 2, 0, Math.PI * 2);
     ctx.fill();
 
-    // beak
     ctx.fillStyle = '#ff6f00';
     ctx.beginPath();
     ctx.moveTo(bird.r - 2, -2);
@@ -357,6 +678,7 @@
   }
 
   resetGame();
+  draw();
   loop();
 })();
 </script>
